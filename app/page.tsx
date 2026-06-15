@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChoiceCard } from "@/components/home/choice-card";
@@ -130,9 +131,23 @@ export default function Home() {
                 <p className="text-slate-600 leading-7">
                   You can continue with this workflow and configure fields or upload settings for the selected path.
                 </p>
-                <Button variant="default" size="lg" type="button" disabled={loading}>
-                  Continue
-                </Button>
+                {selectedOption === "manual" ? (
+                  <Link href="/manual-entry" className="w-full sm:w-auto">
+                    <Button variant="default" size="lg" type="button" disabled={loading}>
+                      Continue
+                    </Button>
+                  </Link>
+                ) : selectedOption === "upload" ? (
+                  <Link href="/upload" className="w-full sm:w-auto">
+                    <Button variant="default" size="lg" type="button" disabled={loading}>
+                      Continue
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button variant="default" size="lg" type="button" disabled={loading}>
+                    Continue
+                  </Button>
+                )}
               </div>
             )}
           </div>
