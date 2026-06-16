@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChoiceCard } from "@/components/home/choice-card";
@@ -24,8 +25,10 @@ const options = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [accessWarning, setAccessWarning] = useState("");
   const [access, setAccess] = useState<HubspotAccessState>({
     accessToken: "",
     validated: false,
@@ -40,13 +43,16 @@ export default function Home() {
 
   function handleSelect(optionId: string) {
     if (!access.validated) {
+      setAccessWarning("Validate your HubSpot private app access token first.");
       return;
     }
 
+    setAccessWarning("");
     setLoading(true);
     setTimeout(() => {
       setSelectedOption(optionId);
       setLoading(false);
+      router.push(optionId === "manual" ? "/manual-entry" : "/upload");
     }, 300);
   }
 
@@ -78,6 +84,12 @@ export default function Home() {
         </section>
 
         <HubspotAccessGate onAccessChange={setAccess} />
+
+        {accessWarning ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700">
+            {accessWarning}
+          </div>
+        ) : null}
 
         <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
           <div className="rounded-[2rem] border border-slate-200/80 bg-white p-8 shadow-sm shadow-slate-900/5">

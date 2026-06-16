@@ -14,6 +14,18 @@ function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function getStatus(error: unknown) {
+  return (error as { response?: { status?: number } }).response?.status;
+}
+
+function missingScopeMessage(missingRequiredScopes: string[]) {
+  if (!missingRequiredScopes.length) {
+    return "";
+  }
+
+  return `This token is valid but missing required permissions: ${missingRequiredScopes.join(", ")}.`;
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { accessToken?: string };
@@ -27,16 +39,80 @@ export async function POST(req: Request) {
     }
 
     const hubspot = createHubspotClient(accessToken);
-    const tokenInfo = await hubspot.get(`/oauth/v1/access-tokens/${encodeURIComponent(accessToken)}`);
-    const scopes = unique((tokenInfo.data?.scopes ?? tokenInfo.data?.scope ?? []) as string[]);
-    const missingRequiredScopes = REQUIRED_SCOPES.filter((scope) => !scopes.includes(scope));
-    const missingRecommendedScopes = RECOMMENDED_SCOPES.filter((scope) => !scopes.includes(scope));
+
+    let scopes: string[] = [];
+    let missingRecommendedScopes = RECOMMENDED_SCOPES;
+
+    try {
+      const tokenInfo = await hubspot.get(`/oauth/v1/access-tokens/${encodeURIComponent(accessToken)}`);
+      scopes = unique((tokenInfo.data?.scopes ?? tokenInfo.data?.scope ?? []) as string[]);
+      const missingRequiredScopes = REQUIRED_SCOPES.filter((scope) => !scopes.includes(scope));
+      missingRecommendedScopes = RECOMMENDED_SCOPES.filter((scope) => !scopes.includes(scope));
+
+      if (missingRequiredScopes.length) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: missingScopeMessage(missingRequiredScopes),
+            scopes,
+            missingRequiredScopes,
+            missingRecommendedScopes,
+          },
+          { status: 403 },
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: missingRecommendedScopes.length
+          ? "Token validated. Contact and company permissions are ready. Deal scopes are missing."
+          : "Token validated with the required HubSpot permissions.",
+        scopes,
+        missingRequiredScopes,
+        missingRecommendedScopes,
+        hubId: tokenInfo.data?.hub_id ?? tokenInfo.data?.hubId,
+        user: tokenInfo.data?.user,
+      });
+    } catch (scopeError: unknown) {
+      if (getStatus(scopeError) === 401) {
+        return NextResponse.json(
+          { success: false, message: "The private app access token is invalid or expired." },
+          { status: 401 },
+        );
+      }
+    }
+
+    const permissionChecks = await Promise.allSettled([
+      hubspot.get("/crm/v3/properties/contacts", { params: { archived: false } }),
+      hubspot.get("/crm/v3/properties/companies", { params: { archived: false } }),
+      hubspot.post("/crm/v3/objects/contacts/search", { limit: 1, properties: ["email"] }),
+      hubspot.post("/crm/v3/objects/companies/search", { limit: 1, properties: ["name", "domain"] }),
+    ]);
+
+    const missingRequiredScopes = [
+      permissionChecks[0].status === "rejected" || permissionChecks[2].status === "rejected"
+        ? "crm.objects.contacts.read"
+        : "",
+      permissionChecks[1].status === "rejected" || permissionChecks[3].status === "rejected"
+        ? "crm.objects.companies.read"
+        : "",
+    ].filter(Boolean);
+
+    const authFailure = permissionChecks.find(
+      (check) => check.status === "rejected" && getStatus(check.reason) === 401,
+    );
+    if (authFailure) {
+      return NextResponse.json(
+        { success: false, message: "The private app access token is invalid or expired." },
+        { status: 401 },
+      );
+    }
 
     if (missingRequiredScopes.length) {
       return NextResponse.json(
         {
           success: false,
-          message: "This token is valid but missing required contact or company permissions.",
+          message: missingScopeMessage(missingRequiredScopes),
           scopes,
           missingRequiredScopes,
           missingRecommendedScopes,
@@ -47,14 +123,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: missingRecommendedScopes.length
-        ? "Token validated. Contact and company permissions are ready. Deal scopes are missing."
-        : "Token validated with the required HubSpot permissions.",
+      message:
+        "Token validated for HubSpot contact and company access. Write permissions will also be checked by HubSpot during save/import.",
       scopes,
-      missingRequiredScopes,
+      missingRequiredScopes: [],
       missingRecommendedScopes,
-      hubId: tokenInfo.data?.hub_id ?? tokenInfo.data?.hubId,
-      user: tokenInfo.data?.user,
     });
   } catch (error: unknown) {
     const err = error as { response?: { status?: number } };
