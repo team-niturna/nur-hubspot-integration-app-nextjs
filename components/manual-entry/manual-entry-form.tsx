@@ -322,8 +322,8 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
                           <div key={field.key} className="space-y-2">
                             <label className="block text-sm font-medium text-slate-800">{field.label}</label>
                             <Select
-                              label={field.label}
                               options={contactMap[field.propertyName]!.options!}
+                              label=""
                               searchable={field.propertyName === "hs_lead_status" || field.propertyName === "lifecyclestage"}
                               value={String(value)}
                               onValueChange={(next) => setValue(field.key, next)}
@@ -388,8 +388,8 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
                           <div key={field.key} className="space-y-2">
                             <label className="block text-sm font-medium text-slate-800">{field.label}</label>
                             <Select
-                              label={field.label}
                               options={property.options}
+                              label=""
                               searchable={field.propertyName === "industry" || field.propertyName === "company_size" || field.propertyName === "type"}
                               value={String(value)}
                               onValueChange={(next) => setValue(field.key, next)}
