@@ -27,15 +27,16 @@ export function Select({ label, options, searchable, value, onValueChange, class
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search properties..."
-            className="flex h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+            placeholder="Search..."
+            className="flex h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm transition duration-200 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
           />
           <select
             value={value}
             onChange={(event) => {
               onValueChange?.(event.target.value);
+              setQuery("");
             }}
-            className="flex h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+            className="flex h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-white bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%231e293b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-no-repeat bg-[right_0.5rem_center] px-4 py-2 pr-10 text-sm text-slate-900 shadow-sm transition duration-200 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             {...props}
           >
             <option value="">Unmapped</option>
@@ -50,7 +51,7 @@ export function Select({ label, options, searchable, value, onValueChange, class
         <select
           value={value}
           onChange={(event) => onValueChange?.(event.target.value)}
-          className="flex h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          className="flex h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-white bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%231e293b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-no-repeat bg-[right_0.5rem_center] px-4 py-2 pr-10 text-sm text-slate-900 shadow-sm transition duration-200 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
           {...props}
         >
           <option value="">Unmapped</option>

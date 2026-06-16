@@ -70,7 +70,8 @@ function getValidationRules(property: HubSpotPropertyDefinition, objectType: "co
     };
   }
 
-  if (property.type === "number") {
+  // Only apply numeric validation for actual numeric fields (like Annual Revenue), not text fields with numeric codes
+  if (property.type === "number" && property.name !== "hs_state_code" && property.name !== "hs_country_region_code") {
     rules.pattern = {
       value: numberPattern,
       message: "Enter a numeric value.",
@@ -303,8 +304,8 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
 
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
-            {contactSections.map((section) => (
-              <Card key={section.title} className="space-y-4">
+            {contactSections.map((section, sectionIdx) => (
+              <Card key={`contact-section-${sectionIdx}`} className="space-y-4">
                 <CardHeader>
                   <CardTitle>{section.title}</CardTitle>
                   <CardDescription>{section.description}</CardDescription>
@@ -355,8 +356,8 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
           </div>
 
           <div className="space-y-6">
-            {companySections.map((section) => (
-              <Card key={section.title} className="space-y-4">
+            {companySections.map((section, sectionIdx) => (
+              <Card key={`company-section-${sectionIdx}`} className="space-y-4">
                 <CardHeader>
                   <CardTitle>{section.title}</CardTitle>
                   <CardDescription>{section.description}</CardDescription>

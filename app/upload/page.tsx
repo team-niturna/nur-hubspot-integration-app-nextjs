@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,6 +105,7 @@ export default function UploadPage() {
   const [previewColumns, setPreviewColumns] = useState<string[]>([]);
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [isParsing, setIsParsing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -120,12 +121,14 @@ export default function UploadPage() {
     [rowValidation],
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const contactCount = useMemo(() => {
     const emailField = getFieldName(previewColumns, "email");
     if (!emailField) return 0;
     return previewRows.filter((row) => String(row[emailField] ?? "").trim()).length;
   }, [previewColumns, previewRows]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const companyCount = useMemo(() => {
     const emailField = getFieldName(previewColumns, "email");
     const nameField = getFieldName(previewColumns, "name");
@@ -215,6 +218,126 @@ export default function UploadPage() {
     setPreviewRows((current) => current.filter((row) => row.id !== rowId));
   };
 
+  const handleSubmit = async () => {
+    if (invalidRowCount > 0) {
+      setToast({ type: "error", message: "Cannot submit: there are invalid rows." });
+      return;
+    }
+
+    if (previewRows.length === 0) {
+      setToast({ type: "error", message: "No valid rows to submit." });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Map CSV columns to HubSpot properties
+      const emailField = getFieldName(previewColumns, "email");
+      const nameField = getFieldName(previewColumns, "name");
+      const domainField = getFieldName(previewColumns, "domain");
+
+      const rows = previewRows.map((row) => {
+        const contact: Record<string, string | number | null> = {};
+        const company: Record<string, string | number | null> = {};
+
+        // Map email field
+        if (emailField && row[emailField]) {
+          contact.email = String(row[emailField]);
+        }
+
+        // Map name and domain fields
+        if (nameField && row[nameField]) {
+          company.name = String(row[nameField]);
+        }
+        if (domainField && row[domainField]) {
+          company.domain = String(row[domainField]);
+        }
+
+        // Map other columns intelligently
+        for (const column of previewColumns) {
+          if (column === emailField || column === nameField || column === domainField) continue;
+
+          const value = row[column];
+          if (!value) continue;
+
+          const normalized = column.toLowerCase();
+          
+          // Contact fields
+          if (/firstname|first.?name/.test(normalized)) {
+            contact.firstname = String(value);
+          } else if (/lastname|last.?name|surname/.test(normalized)) {
+            contact.lastname = String(value);
+          } else if (/phone|telephone/.test(normalized)) {
+            contact.phone = String(value);
+          } else if (/mobile|cell/.test(normalized)) {
+            contact.mobilephone = String(value);
+          } else if (/job.?title|title/.test(normalized)) {
+            contact.jobtitle = String(value);
+          } else if (/company|employer/.test(normalized) && !company.name) {
+            contact.company = String(value);
+          } else if (/website|web/.test(normalized) && !company.website) {
+            contact.website = String(value);
+          } else if (/linkedin|social/.test(normalized)) {
+            contact.hs_linkedin_url = String(value);
+          } else if (/facebook/.test(normalized)) {
+            contact.facebook = String(value);
+          }
+          
+          // Company fields
+          if (/website|web/.test(normalized) && !contact.website) {
+            company.website = String(value);
+          } else if (/phone/.test(normalized) && !contact.phone) {
+            company.phone = String(value);
+          } else if (/industry/.test(normalized)) {
+            company.industry = String(value);
+          } else if (/description|about/.test(normalized)) {
+            company.description = String(value);
+          }
+
+          // Location fields (apply to both)
+          if (/city/.test(normalized)) {
+            contact.city = String(value);
+            company.city = String(value);
+          } else if (/state|region|province/.test(normalized)) {
+            contact.state = String(value);
+            company.state = String(value);
+          } else if (/country/.test(normalized)) {
+            contact.country = String(value);
+            company.country = String(value);
+          }
+        }
+
+        return {
+          contact: Object.keys(contact).length > 0 ? contact : undefined,
+          company: Object.keys(company).length > 0 ? company : undefined,
+        };
+      });
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to submit data");
+      }
+
+      setToast({ type: "success", message: result.message });
+      setPreviewRows([]);
+      setPreviewColumns([]);
+      setFileName("");
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      setToast({ type: "error", message: err.message ?? "Failed to submit data" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 py-14 px-6 sm:px-10 lg:px-16">
       <div className="mx-auto w-full max-w-7xl space-y-10">
@@ -291,8 +414,8 @@ export default function UploadPage() {
                   <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
                     <thead className="bg-slate-950 text-white">
                       <tr>
-                        {previewColumns.map((column) => (
-                          <th key={column} className="border-b border-slate-200 px-4 py-3 font-semibold">
+                        {previewColumns.map((column, idx) => (
+                          <th key={`header-${idx}-${column}`} className="border-b border-slate-200 px-4 py-3 font-semibold">
                             {column}
                           </th>
                         ))}
@@ -304,13 +427,12 @@ export default function UploadPage() {
                         const errors = rowValidation[row.id] ?? [];
                         const isInvalid = errors.length > 0;
                         return (
-                          <>
+                          <React.Fragment key={row.id}>
                             <tr
-                              key={row.id}
                               className={isInvalid ? "bg-rose-50" : rowIndex % 2 === 0 ? "bg-slate-50" : "bg-white"}
                             >
-                              {previewColumns.map((column) => (
-                                <td key={column} className="border-b border-slate-200 px-4 py-3 align-top text-slate-700">
+                              {previewColumns.map((column, colIdx) => (
+                                <td key={`cell-${row.id}-${colIdx}-${column}`} className="border-b border-slate-200 px-4 py-3 align-top text-slate-700">
                                   <input
                                     value={String(row[column] ?? "")}
                                     onChange={(event) => updateRowValue(row.id, column, event.target.value)}
@@ -332,15 +454,15 @@ export default function UploadPage() {
                               </td>
                             </tr>
                             {isInvalid ? (
-                              <tr key={`${row.id}-error`} className="bg-rose-50">
+                              <tr className="bg-rose-50">
                                 <td colSpan={previewColumns.length + 1} className="px-4 py-3 text-sm text-rose-700">
                                   {errors.map((error, index) => (
-                                    <p key={index}>{error}</p>
+                                    <p key={`error-${row.id}-${index}`}>{error}</p>
                                   ))}
                                 </td>
                               </tr>
                             ) : null}
-                          </>
+                          </React.Fragment>
                         );
                       })}
                     </tbody>
@@ -350,6 +472,25 @@ export default function UploadPage() {
             ) : (
               <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center text-sm text-slate-500">
                 {isParsing ? "Parsing file..." : "No preview available yet. Upload a file to see live JSON conversion."}
+              </div>
+            )}
+
+            {previewRows.length > 0 && (
+              <div className="flex flex-col gap-4 rounded-[2rem] border border-slate-200/80 bg-gradient-to-r from-emerald-50 to-white p-6 shadow-sm shadow-emerald-900/5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Ready to import?</p>
+                  <p className="text-sm text-slate-600">{rowCount - invalidRowCount} valid rows ready to send to HubSpot.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="default"
+                  size="lg"
+                  isLoading={isSubmitting}
+                  disabled={invalidRowCount > 0 || isSubmitting}
+                  onClick={handleSubmit}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit to HubSpot"}
+                </Button>
               </div>
             )}
           </CardContent>
