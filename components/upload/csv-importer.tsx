@@ -493,20 +493,20 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-3">
-                <span className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm">Total rows: {rows.length}</span>
-                <span className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">Valid rows: {validRows}</span>
-                <span className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-900">Invalid rows: {invalidRows}</span>
+                <span className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 px-4 py-2 text-sm text-slate-850 dark:text-slate-200">Total rows: {rows.length}</span>
+                <span className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 px-4 py-2 text-sm text-emerald-900 dark:text-emerald-400">Valid rows: {validRows}</span>
+                <span className="rounded-2xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/20 px-4 py-2 text-sm text-rose-900 dark:text-rose-400">Invalid rows: {invalidRows}</span>
                 <Button type="button" variant="secondary" onClick={addRow}>Add row</Button>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                 <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
-                  <thead className="bg-slate-950 text-white">
+                  <thead className="bg-slate-950 dark:bg-slate-900 text-white border-b border-slate-200 dark:border-slate-800">
                     <tr>
                       {columns.map((column) => (
-                        <th key={column} className="px-4 py-3 font-semibold">{column}</th>
+                        <th key={column} className="px-4 py-3 font-semibold text-slate-100">{column}</th>
                       ))}
-                      <th className="px-4 py-3 font-semibold">Actions</th>
+                      <th className="px-4 py-3 font-semibold text-slate-100">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -514,23 +514,23 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
                       const errors = rowValidation[row.id] || [];
                       return (
                         <React.Fragment key={row.id}>
-                          <tr className={errors.length ? "bg-rose-50" : index % 2 ? "bg-white" : "bg-slate-50"}>
+                          <tr className={errors.length ? "bg-rose-50/50 dark:bg-rose-950/20" : index % 2 ? "bg-white dark:bg-slate-900" : "bg-slate-50 dark:bg-slate-900/40"}>
                             {columns.map((column) => (
-                              <td key={`${row.id}-${column}`} className="border-b border-slate-200 px-3 py-3 align-top">
+                              <td key={`${row.id}-${column}`} className="border-b border-slate-200 dark:border-slate-800 px-3 py-3 align-top">
                                 <input
                                   value={row[column] || ""}
                                   onChange={(event) => updateCell(row.id, column, event.target.value)}
-                                  className="h-10 min-w-40 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                  className="h-10 min-w-40 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 px-3 text-sm outline-none focus:border-slate-400 dark:focus:border-slate-700 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-850"
                                 />
                               </td>
                             ))}
-                            <td className="border-b border-slate-200 px-3 py-3 align-top">
+                            <td className="border-b border-slate-200 dark:border-slate-800 px-3 py-3 align-top">
                               <Button type="button" variant="outline" size="sm" onClick={() => deleteRow(row.id)}>Delete</Button>
                             </td>
                           </tr>
                           {errors.length ? (
-                            <tr className="bg-rose-50">
-                              <td colSpan={columns.length + 1} className="border-b border-rose-100 px-4 py-3 text-sm text-rose-700">
+                            <tr className="bg-rose-50/50 dark:bg-rose-950/20">
+                              <td colSpan={columns.length + 1} className="border-b border-rose-100 dark:border-rose-900/30 px-4 py-3 text-sm text-rose-700 dark:text-rose-400">
                                 {errors.join(" ")}
                               </td>
                             </tr>
