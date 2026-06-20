@@ -287,8 +287,8 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
 
         <HubspotAccessGate compact onAccessChange={setAccess} />
 
-        <div className="rounded-[2rem] border border-slate-200/80 bg-white p-8 shadow-sm shadow-slate-900/5">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 mb-4">Object Type Selection</p>
+        <div className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm shadow-slate-900/5">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-4">Object Type Selection</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
               {
@@ -314,15 +314,15 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
                   }}
                   className={`group cursor-pointer rounded-2xl border p-5 transition duration-300 ${
                     selected
-                      ? "border-slate-900 bg-slate-950/5 shadow-md ring-2 ring-slate-900"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                      ? "border-indigo-600 bg-indigo-500/5 dark:bg-indigo-500/10 shadow-md ring-2 ring-indigo-650 dark:ring-indigo-500 dark:border-indigo-500"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-2xl">{option.icon}</span>
                     <div>
-                      <h3 className="font-semibold text-slate-950">{option.title}</h3>
-                      <p className="text-xs text-slate-500 mt-1">{option.description}</p>
+                      <h3 className="font-semibold text-slate-950 dark:text-slate-100">{option.title}</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{option.description}</p>
                     </div>
                   </div>
                 </div>
