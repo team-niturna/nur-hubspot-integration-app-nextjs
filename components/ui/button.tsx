@@ -15,11 +15,11 @@ export interface ButtonProps
 
 const variantStyles: Record<ButtonVariant, string> = {
   default:
-    "bg-slate-950 text-white hover:bg-slate-900 focus-visible:ring-slate-950",
+    "bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:ring-indigo-600 shadow-sm shadow-indigo-200",
   outline:
-    "border border-slate-200 bg-white text-slate-950 hover:bg-slate-50 focus-visible:ring-slate-950",
+    "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus-visible:ring-slate-400",
   secondary:
-    "bg-slate-100 text-slate-950 hover:bg-slate-200 focus-visible:ring-slate-950",
+    "bg-slate-100 text-slate-800 hover:bg-slate-200 focus-visible:ring-slate-400",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

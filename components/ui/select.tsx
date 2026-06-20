@@ -11,6 +11,12 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   onValueChange?: (value: string) => void;
 }
 
+const selectClassName =
+  "flex h-11 w-full appearance-none rounded-2xl border border-slate-200 bg-white bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2364748b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-no-repeat bg-[right_0.75rem_center] px-4 py-2 pr-10 text-sm text-slate-900 shadow-sm transition duration-200 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100";
+
+const searchInputClassName =
+  "flex h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm transition duration-200 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100";
+
 export function Select({ label, options, searchable, value, onValueChange, className, ...props }: SelectProps) {
   const [query, setQuery] = React.useState("");
   const filteredOptions = React.useMemo(
@@ -20,15 +26,15 @@ export function Select({ label, options, searchable, value, onValueChange, class
 
   return (
     <div className={cn("space-y-2", className)}>
-      {label && <label className="block text-sm font-medium text-slate-800 dark:text-slate-200">{label}</label>}
+      {label && <label className="block text-sm font-semibold text-slate-700">{label}</label>}
       {searchable ? (
         <div className="space-y-2">
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search..."
-            className="flex h-12 w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm transition duration-200 focus:border-slate-400 dark:focus:border-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-800"
+            placeholder="Search properties..."
+            className={searchInputClassName}
           />
           <select
             value={value}
@@ -36,12 +42,12 @@ export function Select({ label, options, searchable, value, onValueChange, class
               onValueChange?.(event.target.value);
               setQuery("");
             }}
-            className="flex h-12 w-full appearance-none rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%231e293b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] dark:bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f8fafc%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-no-repeat bg-[right_0.5rem_center] px-4 py-2 pr-10 text-sm text-slate-900 dark:text-slate-100 shadow-sm transition duration-200 focus:border-slate-400 dark:focus:border-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-800"
+            className={selectClassName}
             {...props}
           >
-            <option value="" className="dark:bg-slate-950">Unmapped</option>
+            <option value="">Do Not Map</option>
             {filteredOptions.map((option) => (
-              <option key={option.value} value={option.value} className="dark:bg-slate-950">
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
@@ -51,12 +57,12 @@ export function Select({ label, options, searchable, value, onValueChange, class
         <select
           value={value}
           onChange={(event) => onValueChange?.(event.target.value)}
-          className="flex h-12 w-full appearance-none rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%231e293b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] dark:bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f8fafc%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-no-repeat bg-[right_0.5rem_center] px-4 py-2 pr-10 text-sm text-slate-900 dark:text-slate-100 shadow-sm transition duration-200 focus:border-slate-400 dark:focus:border-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-800"
+          className={selectClassName}
           {...props}
         >
-          <option value="" className="dark:bg-slate-950">Unmapped</option>
+          <option value="">Select...</option>
           {options.map((option) => (
-            <option key={option.value} value={option.value} className="dark:bg-slate-950">
+            <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}

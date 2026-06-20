@@ -57,56 +57,62 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950/20 py-14 px-6 sm:px-10 lg:px-16">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-14">
-        <section className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-10 shadow-xl shadow-slate-900/5 sm:p-14">
-          <div className="max-w-3xl space-y-6">
-            <p className="inline-flex rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-              Ready to onboard data faster?
-            </p>
-            <div className="space-y-4">
-              <h1 className="text-4xl font-semibold tracking-tight text-slate-950 dark:text-slate-100 sm:text-5xl">
-                How would you like to add data?
+    <main className="min-h-screen bg-slate-100 py-14 px-6 sm:px-10 lg:px-16">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
+
+        {/* Hero section */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-10 shadow-sm sm:p-14">
+          <div className="max-w-3xl space-y-5">
+            <span className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-sm font-semibold text-indigo-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+              HubSpot Data Manager
+            </span>
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+                How would you like to<br className="hidden sm:block" /> add data?
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
-                Choose the best option for your workflow. You can enter data manually or upload a file to preview and map imported records.
+              <p className="max-w-2xl text-lg leading-8 text-slate-500">
+                Choose the best option for your workflow. Enter data manually or upload a file to preview and map records into HubSpot.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="default" size="lg" type="button" disabled>
-                Get started in seconds
-              </Button>
-              <Button variant="secondary" size="lg" type="button" disabled>
-                Built for teams and imports
-              </Button>
+            <div className="flex flex-wrap gap-3 pt-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600">
+                ✅ Contacts &amp; Companies
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600">
+                📋 CSV Upload Support
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600">
+                🔗 HubSpot Integration
+              </span>
             </div>
           </div>
         </section>
 
+        {/* Access Gate */}
         <HubspotAccessGate onAccessChange={setAccess} />
 
         {accessWarning ? (
-          <div className="rounded-2xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/20 px-5 py-4 text-sm font-medium text-rose-700 dark:text-rose-400">
-            {accessWarning}
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700">
+            ⚠️ {accessWarning}
           </div>
         ) : null}
 
-        <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-          <div className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-sm shadow-slate-900/5">
-            <div className="space-y-5">
-              <div>
-                <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-                  Phase 1 workflow
-                </p>
-                <h2 className="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-100">
-                  Pick how you want to add new HubSpot contacts and companies.
-                </h2>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400 leading-7">
-                Select one of the options below to continue. Each card includes hover, selected, and active states so you can preview the next step.
+        {/* Option Cards */}
+        <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="space-y-4 mb-8">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">
+                Step 2 — Choose Workflow
+              </p>
+              <h2 className="text-2xl font-bold text-slate-900">
+                Pick how you want to add new HubSpot contacts and companies.
+              </h2>
+              <p className="text-slate-500 leading-7">
+                Select one of the options below. Manual entry is best for a few records, while upload is ideal for bulk imports.
               </p>
             </div>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {options.map((option) => (
                 <ChoiceCard
                   key={option.id}
@@ -122,38 +128,39 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-dashed border-slate-200/80 dark:border-slate-800 bg-slate-950/5 dark:bg-white/5 p-8 text-slate-700 dark:text-slate-300 shadow-sm shadow-slate-900/5">
+          {/* Info / Preview Panel */}
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-slate-700">
             {!selectedOption ? (
-              <div className="flex h-full flex-col justify-center gap-5 text-center sm:text-left">
+              <div className="flex h-full flex-col justify-center gap-6">
                 <div className="space-y-3">
-                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-                    Empty state
-                  </p>
-                  <h3 className="text-2xl font-semibold text-slate-950 dark:text-slate-100">
-                    No data source selected yet
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-2xl">
+                    💡
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    No option selected yet
                   </h3>
-                  <p className="max-w-xl text-slate-600 dark:text-slate-400">
-                    Select a card to begin. Your selection will be highlighted and the next step will become available.
+                  <p className="text-slate-500">
+                    Select a card on the left to begin. Validate your HubSpot token first using Step 1 above.
                   </p>
                 </div>
-                <div className="mx-auto w-full max-w-sm sm:mx-0">
-                  <div className="rounded-3xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Tip</p>
-                    <p className="mt-3 text-base text-slate-700 dark:text-slate-300">
-                      Manual entry is best for a few records, while upload is ideal for large lists and spreadsheets.
-                    </p>
-                  </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">Quick Tips</p>
+                  <ul className="space-y-2 text-sm text-slate-600">
+                    <li className="flex items-start gap-2"><span className="text-indigo-500 mt-0.5">•</span> Manual Entry — best for 1–10 records</li>
+                    <li className="flex items-start gap-2"><span className="text-indigo-500 mt-0.5">•</span> CSV Upload — best for bulk imports</li>
+                    <li className="flex items-start gap-2"><span className="text-indigo-500 mt-0.5">•</span> Preview and edit before HubSpot submission</li>
+                  </ul>
                 </div>
               </div>
             ) : (
               <div className="space-y-5">
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">
                   Selected option
                 </p>
-                <h3 className="text-2xl font-semibold text-slate-950 dark:text-slate-100">
+                <h3 className="text-2xl font-bold text-slate-900">
                   {selectedLabel}
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400 leading-7">
+                <p className="text-slate-500 leading-7">
                   You can continue with this workflow and configure fields or upload settings for the selected path.
                 </p>
                 {!access.validated ? (
@@ -163,13 +170,13 @@ export default function Home() {
                 ) : selectedOption === "manual" ? (
                   <Link href="/manual-entry" className="w-full sm:w-auto">
                     <Button variant="default" size="lg" type="button" disabled={loading}>
-                      Continue
+                      Continue to Manual Entry →
                     </Button>
                   </Link>
                 ) : selectedOption === "upload" ? (
                   <Link href="/upload" className="w-full sm:w-auto">
                     <Button variant="default" size="lg" type="button" disabled={loading}>
-                      Continue
+                      Continue to Upload →
                     </Button>
                   </Link>
                 ) : (

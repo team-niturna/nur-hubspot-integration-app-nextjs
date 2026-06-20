@@ -273,22 +273,24 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950/20 py-14 px-6 sm:px-10 lg:px-16">
-      <div className="mx-auto w-full max-w-4xl space-y-10">
-        <section className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-10 shadow-xl shadow-slate-900/5 sm:p-14">
-          <div className="space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Manual Entry</p>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-950 dark:text-slate-100 sm:text-5xl">Create a contact or company with rich HubSpot metadata.</h1>
-            <p className="max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-400">
-              Use all supported HubSpot fields in a structured form. Required fields validate immediately and payloads are sent to HubSpot.
-            </p>
-          </div>
+    <main className="min-h-screen bg-slate-100 py-14 px-6 sm:px-10 lg:px-16">
+      <div className="mx-auto w-full max-w-4xl space-y-8">
+        <section className="rounded-3xl border border-slate-200 bg-white p-10 shadow-sm sm:p-12">
+          <span className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-sm font-semibold text-indigo-700 mb-4">
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+            Manual Entry
+          </span>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Create a contact or company with rich HubSpot metadata.</h1>
+          <p className="mt-3 max-w-3xl text-base leading-7 text-slate-500">
+            Use all supported HubSpot fields. Required fields validate immediately and payloads are sent to HubSpot.
+          </p>
         </section>
 
         <HubspotAccessGate compact onAccessChange={setAccess} />
 
-        <div className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-sm shadow-slate-900/5">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-4">Object Type Selection</p>
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600 mb-1">Step 1</p>
+          <p className="text-lg font-bold text-slate-900 mb-5">Select Object Type</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
               {
@@ -312,18 +314,19 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
                     setSaveMode(option.id);
                     window.setTimeout(() => trigger(), 0);
                   }}
-                  className={`group cursor-pointer rounded-2xl border p-5 transition duration-300 ${
+                  className={`group cursor-pointer rounded-2xl border-2 p-5 transition-all duration-200 ${
                     selected
-                      ? "border-slate-900 dark:border-slate-100 bg-slate-950/5 dark:bg-white/5 shadow-md ring-2 ring-slate-900 dark:ring-slate-100"
-                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
+                      ? "border-indigo-500 bg-indigo-50 shadow-md"
+                      : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white hover:shadow-sm"
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <span className="text-2xl">{option.icon}</span>
+                    <span className={`flex h-12 w-12 items-center justify-center rounded-xl text-2xl ${selected ? "bg-indigo-100" : "bg-white border border-slate-200"}`}>{option.icon}</span>
                     <div>
-                      <h3 className="font-semibold text-slate-950 dark:text-slate-100">{option.title}</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{option.description}</p>
+                      <h3 className={`font-bold ${selected ? "text-indigo-900" : "text-slate-900"}`}>{option.title}</h3>
+                      <p className={`text-xs mt-0.5 ${selected ? "text-indigo-600" : "text-slate-500"}`}>{option.description}</p>
                     </div>
+                    {selected && <div className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white text-xs">✓</div>}
                   </div>
                 </div>
               );
@@ -351,7 +354,7 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
                         if (contactMap[field.propertyName]?.type === "enumeration" && contactMap[field.propertyName]?.options?.length) {
                           return (
                             <div key={field.key} className="space-y-2">
-                              <label className="block text-sm font-medium text-slate-800">{field.label}</label>
+                              <label className="block text-sm font-semibold text-slate-700">{field.label}</label>
                               <Select
                                 options={contactMap[field.propertyName]!.options!}
                                 label=""
@@ -365,7 +368,7 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
 
                         return (
                           <label key={field.key} className="space-y-2 block">
-                            <span className="text-sm font-medium text-slate-800">{field.label}</span>
+                            <span className="text-sm font-semibold text-slate-700">{field.label}</span>
                             <Input
                               type={getFieldType(contactMap[field.propertyName])}
                               {...register(field.key, rules)}
@@ -415,7 +418,7 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
                         if (property?.type === "enumeration" && property.options?.length) {
                           return (
                             <div key={field.key} className="space-y-2">
-                              <label className="block text-sm font-medium text-slate-800">{field.label}</label>
+                              <label className="block text-sm font-semibold text-slate-700">{field.label}</label>
                               <Select
                                 options={property.options}
                                 label=""
@@ -430,11 +433,11 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
                         if (field.propertyName === "description" || field.propertyName === "about_us") {
                           return (
                             <label key={field.key} className="space-y-2 sm:col-span-2 block">
-                              <span className="text-sm font-medium text-slate-800">{field.label}</span>
+                              <span className="text-sm font-semibold text-slate-700">{field.label}</span>
                               <textarea
                                 {...register(field.key, rules)}
                                 rows={4}
-                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 shadow-sm transition duration-200 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition duration-200 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                               />
                               {errors[field.key] ? <p className="text-sm text-rose-600">{errors[field.key]?.message}</p> : null}
                             </label>
@@ -443,7 +446,7 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
 
                         return (
                           <label key={field.key} className="space-y-2 block">
-                            <span className="text-sm font-medium text-slate-800">{field.label}</span>
+                            <span className="text-sm font-semibold text-slate-700">{field.label}</span>
                             <Input
                               type={getFieldType(property)}
                               {...register(field.key, rules)}
@@ -461,13 +464,13 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
           )}
 
           <div className="col-span-full">
-            <div className="flex flex-col gap-4 rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6 shadow-sm shadow-slate-900/5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Submit your import data</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">The form sends the payload to HubSpot.</p>
+                <p className="text-sm font-bold text-slate-900">Submit your import data</p>
+                <p className="text-sm text-slate-500">The form sends the payload to HubSpot.</p>
               </div>
               <Button type="submit" variant="default" size="lg" isLoading={isLoading} disabled={!access.validated || !isValid || isLoading}>
-                Save manual entry
+                Save to HubSpot →
               </Button>
             </div>
           </div>

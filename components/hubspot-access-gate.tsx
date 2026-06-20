@@ -149,13 +149,13 @@ export function HubspotAccessGate({ onAccessChange, compact }: HubspotAccessGate
 
         {message ? (
           <div
-            className={`rounded-2xl border px-4 py-3 text-sm ${
+            className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
               message.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                 : "border-rose-200 bg-rose-50 text-rose-700"
             }`}
           >
-            {message.text}
+            {message.type === "success" ? "✓ " : "⚠️ "}{message.text}
           </div>
         ) : null}
 

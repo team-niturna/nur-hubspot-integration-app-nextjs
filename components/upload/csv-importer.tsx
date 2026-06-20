@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 import { HubspotAccessGate, type HubspotAccessState } from "@/components/hubspot-access-gate";
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,11 @@ interface ImportResult {
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const numberPattern = /^-?\d+(\.\d+)?$/;
 
+// Use a counter-based ID to avoid hydration mismatch from crypto.randomUUID()
+let rowCounter = 0;
 function rowId() {
-  return typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+  rowCounter += 1;
+  return `row-${rowCounter}`;
 }
 
 function normalize(value: string) {
@@ -157,7 +160,7 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
   const [fileName, setFileName] = useState("");
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<PreviewRow[]>([]);
-  const [mapping, setMapping] = useState<Record<string, string>>({}); // csvColumn -> HubSpot Property Name
+  const [mapping, setMapping] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -165,6 +168,18 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
 
   const [dynamicProperties, setDynamicProperties] = useState<HubSpotPropertyDefinition[]>([]);
   const [isLoadingProperties, setIsLoadingProperties] = useState(false);
+
+  // Auto-dismiss toast
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (toast) {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+    }
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, [toast]);
 
   useEffect(() => {
     if (!access.validated || !importObjectType) {
@@ -185,7 +200,7 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
         });
         const result = await response.json();
         if (result.success && Array.isArray(result.properties)) {
-          const mapped: HubSpotPropertyDefinition[] = result.properties.map((prop: any) => ({
+          const mapped: HubSpotPropertyDefinition[] = result.properties.map((prop: { name: string; label: string; type: string; readonly: boolean; options: { label: string; value: string }[] }) => ({
             name: prop.name,
             label: prop.label,
             type: prop.type === "enumeration" ? "enumeration" : prop.type === "number" ? "number" : prop.type === "datetime" ? "datetime" : "string",
@@ -249,7 +264,7 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
     if (!file) return;
 
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      setToast({ type: "error", message: "Upload one CSV file. XLSX is no longer accepted in this flow." });
+      setToast({ type: "error", message: "Upload one CSV file. XLSX is not accepted in this flow." });
       return;
     }
 
@@ -270,7 +285,7 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
       const parsedRows = rawRows.slice(1).map((rawRow) => {
         const next: PreviewRow = { id: rowId() };
         header.forEach((column, index) => {
-          next[column] = String(rawRow[index] ?? "");
+          next[column] = String((rawRow as Array<string | number | null>)[index] ?? "");
         });
         return next;
       });
@@ -376,20 +391,30 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950/10 px-6 py-10 sm:px-10 lg:px-16">
+    <main className="min-h-screen bg-slate-100 px-6 py-10 sm:px-10 lg:px-16">
       <div className="mx-auto w-full max-w-7xl space-y-8">
-        <section className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-xl shadow-slate-900/5 sm:p-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">CSV Import</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 dark:text-slate-100">Map one CSV into HubSpot contacts or companies.</h1>
-          <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-400">
+
+        {/* Page Header */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+          <span className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-sm font-semibold text-indigo-700 mb-4">
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+            CSV Import
+          </span>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            Map one CSV into HubSpot contacts or companies.
+          </h1>
+          <p className="mt-3 max-w-3xl text-base leading-7 text-slate-500">
             Validate access, choose object type, upload a CSV, map properties to CSV columns, correct rows in the browser, then import.
           </p>
         </section>
 
+        {/* HubSpot Access Gate */}
         <HubspotAccessGate compact onAccessChange={setAccess} />
 
-        <div className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-sm shadow-slate-900/5">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-4">Object Type Selection</p>
+        {/* Object Type Selection */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600 mb-1">Step 1</p>
+          <p className="text-lg font-bold text-slate-900 mb-5">Select Object Type</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
               {
@@ -419,18 +444,21 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
                     }
                     setImportObjectType(option.id);
                   }}
-                  className={`group cursor-pointer rounded-2xl border p-5 transition duration-300 ${
+                  className={`group cursor-pointer rounded-2xl border-2 p-5 transition-all duration-200 ${
                     selected
-                      ? "border-slate-900 dark:border-slate-100 bg-slate-950/5 dark:bg-white/5 shadow-md ring-2 ring-slate-900 dark:ring-slate-100"
-                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
+                      ? "border-indigo-500 bg-indigo-50 shadow-md"
+                      : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white hover:shadow-sm"
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <span className="text-2xl">{option.icon}</span>
+                    <span className={`flex h-12 w-12 items-center justify-center rounded-xl text-2xl ${selected ? "bg-indigo-100" : "bg-white border border-slate-200"}`}>{option.icon}</span>
                     <div>
-                      <h3 className="font-semibold text-slate-950 dark:text-slate-100">{option.title}</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{option.description}</p>
+                      <h3 className={`font-bold ${selected ? "text-indigo-900" : "text-slate-900"}`}>{option.title}</h3>
+                      <p className={`text-xs mt-0.5 ${selected ? "text-indigo-600" : "text-slate-500"}`}>{option.description}</p>
                     </div>
+                    {selected && (
+                      <div className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white text-xs">✓</div>
+                    )}
                   </div>
                 </div>
               );
@@ -438,39 +466,70 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
           </div>
         </div>
 
+        {/* Upload Card */}
         {importObjectType ? (
           <Card>
             <CardHeader>
-              <CardTitle>1. Upload CSV</CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">2</span>
+                <CardTitle>Upload CSV</CardTitle>
+              </div>
               <CardDescription>
-                Upload a single .csv file for the selected {importObjectType === "contact" ? "contacts" : "companies"} flow.
-                {isLoadingProperties && " (Fetching properties from HubSpot...)"}
+                Upload a single .csv file for {importObjectType === "contact" ? "contacts" : "companies"} import.
+                {isLoadingProperties && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-indigo-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                    Fetching properties from HubSpot...
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 lg:grid-cols-[1fr_auto]">
-              <label className="block rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
-                <span className="font-semibold text-slate-950">Choose CSV file</span>
-                <input type="file" accept=".csv,text/csv" onChange={handleFileChange} className="mt-4 w-full cursor-pointer" />
+              {/* File Drop Zone */}
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50 p-8 text-center transition hover:border-indigo-400 hover:bg-indigo-100/50">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white border border-indigo-100 shadow-sm text-3xl">📄</span>
+                <div>
+                  <p className="font-semibold text-slate-900">Choose CSV file</p>
+                  <p className="text-sm text-slate-500 mt-1">Click here or drag and drop your .csv file</p>
+                </div>
+                <input type="file" accept=".csv,text/csv" onChange={handleFileChange} className="sr-only" />
               </label>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700">
-                <p className="font-semibold text-slate-950">{fileName || "No file selected"}</p>
-                <p className="mt-2">{isParsing ? "Reading CSV..." : rows.length ? `${rows.length} rows loaded` : "Rows appear after upload."}</p>
+              {/* File Status */}
+              <div className="flex min-w-48 flex-col justify-center rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm">
+                <p className="font-semibold text-slate-800 truncate">{fileName || "No file selected"}</p>
+                <p className="mt-2 text-slate-600">
+                  {isParsing ? (
+                    <span className="text-indigo-600">Reading CSV...</span>
+                  ) : rows.length ? (
+                    <span className="text-emerald-600 font-medium">{rows.length} rows loaded ✓</span>
+                  ) : (
+                    "Rows appear after upload."
+                  )}
+                </p>
               </div>
             </CardContent>
           </Card>
         ) : null}
 
+        {/* Mapping Card */}
         {columns.length && importObjectType ? (
           <Card>
             <CardHeader>
-              <CardTitle>2. Map properties</CardTitle>
-              <CardDescription>Map CSV columns to any HubSpot {importObjectType === "contact" ? "Contact" : "Company"} property.</CardDescription>
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">3</span>
+                <CardTitle>Map Properties</CardTitle>
+              </div>
+              <CardDescription>Map CSV columns to any HubSpot {importObjectType === "contact" ? "Contact" : "Company"} property. All {activeProperties.length} properties are available.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               {columns.map((column) => (
-                <div key={column} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 p-4 flex flex-col justify-between">
-                  <div className="mb-2">
-                    <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">{column}</p>
+                <div key={column} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-lg bg-white border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                      CSV
+                    </span>
+                    <p className="text-sm font-semibold text-slate-900">{column}</p>
+                    <span className="ml-auto text-slate-400 text-xs">→</span>
                   </div>
                   <Select
                     label=""
@@ -485,28 +544,41 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
           </Card>
         ) : null}
 
+        {/* Editable Preview Table */}
         {rows.length && importObjectType ? (
           <Card>
             <CardHeader>
-              <CardTitle>3. Edit and validate rows</CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">4</span>
+                <CardTitle>Edit and Validate Rows</CardTitle>
+              </div>
               <CardDescription>Fix highlighted rows directly in the cells. Corrected values are saved instantly for import.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-3">
-                <span className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 px-4 py-2 text-sm text-slate-850 dark:text-slate-200">Total rows: {rows.length}</span>
-                <span className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 px-4 py-2 text-sm text-emerald-900 dark:text-emerald-400">Valid rows: {validRows}</span>
-                <span className="rounded-2xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/20 px-4 py-2 text-sm text-rose-900 dark:text-rose-400">Invalid rows: {invalidRows}</span>
-                <Button type="button" variant="secondary" onClick={addRow}>Add row</Button>
+                <span className="rounded-xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
+                  Total: <strong>{rows.length}</strong>
+                </span>
+                <span className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
+                  Valid: <strong>{validRows}</strong>
+                </span>
+                <span className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-800">
+                  Invalid: <strong>{invalidRows}</strong>
+                </span>
+                <Button type="button" variant="secondary" onClick={addRow}>+ Add Row</Button>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
                 <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
-                  <thead className="bg-slate-950 dark:bg-slate-900 text-white border-b border-slate-200 dark:border-slate-800">
-                    <tr>
+                  <thead>
+                    <tr className="bg-slate-900">
+                      <th className="sticky left-0 bg-slate-900 px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-300">#</th>
                       {columns.map((column) => (
-                        <th key={column} className="px-4 py-3 font-semibold text-slate-100">{column}</th>
+                        <th key={column} className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-300 whitespace-nowrap">
+                          {column}
+                        </th>
                       ))}
-                      <th className="px-4 py-3 font-semibold text-slate-100">Actions</th>
+                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-300">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -514,24 +586,25 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
                       const errors = rowValidation[row.id] || [];
                       return (
                         <React.Fragment key={row.id}>
-                          <tr className={errors.length ? "bg-rose-50/50 dark:bg-rose-950/20" : index % 2 ? "bg-white dark:bg-slate-900" : "bg-slate-50 dark:bg-slate-900/40"}>
+                          <tr className={errors.length ? "bg-rose-50" : index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                            <td className="border-b border-slate-100 px-4 py-3 text-xs text-slate-400 font-mono">{index + 1}</td>
                             {columns.map((column) => (
-                              <td key={`${row.id}-${column}`} className="border-b border-slate-200 dark:border-slate-800 px-3 py-3 align-top">
+                              <td key={`${row.id}-${column}`} className="border-b border-slate-100 px-3 py-2 align-top">
                                 <input
                                   value={row[column] || ""}
                                   onChange={(event) => updateCell(row.id, column, event.target.value)}
-                                  className="h-10 min-w-40 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 px-3 text-sm outline-none focus:border-slate-400 dark:focus:border-slate-700 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-850"
+                                  className="h-9 min-w-36 rounded-lg border border-slate-200 bg-white text-slate-900 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
                                 />
                               </td>
                             ))}
-                            <td className="border-b border-slate-200 dark:border-slate-800 px-3 py-3 align-top">
+                            <td className="border-b border-slate-100 px-3 py-2 align-top">
                               <Button type="button" variant="outline" size="sm" onClick={() => deleteRow(row.id)}>Delete</Button>
                             </td>
                           </tr>
                           {errors.length ? (
-                            <tr className="bg-rose-50/50 dark:bg-rose-950/20">
-                              <td colSpan={columns.length + 1} className="border-b border-rose-100 dark:border-rose-900/30 px-4 py-3 text-sm text-rose-700 dark:text-rose-400">
-                                {errors.join(" ")}
+                            <tr className="bg-rose-50">
+                              <td colSpan={columns.length + 2} className="border-b border-rose-100 px-4 py-2 text-sm text-rose-700 font-medium">
+                                ⚠️ {errors.join(" • ")}
                               </td>
                             </tr>
                           ) : null}
@@ -545,27 +618,38 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
           </Card>
         ) : null}
 
+        {/* Import Summary */}
         {rows.length && importObjectType ? (
           <Card>
             <CardHeader>
-              <CardTitle>4. Import summary</CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">5</span>
+                <CardTitle>Import Summary</CardTitle>
+              </div>
               <CardDescription>Review the statistics before submitting to HubSpot.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 {[
-                  ["Total Rows", rows.length],
-                  ["Valid Rows", validRows],
-                  ["Invalid Rows", invalidRows],
-                  ["Contacts To Create/Update", contactsToCreate],
-                  ["Companies To Create/Update", companiesToCreate],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
+                  { label: "Total Rows", value: rows.length, color: "bg-slate-50 border-slate-200", text: "text-slate-900", label_color: "text-slate-500" },
+                  { label: "Valid Rows", value: validRows, color: "bg-emerald-50 border-emerald-200", text: "text-emerald-900", label_color: "text-emerald-600" },
+                  { label: "Invalid Rows", value: invalidRows, color: "bg-rose-50 border-rose-200", text: "text-rose-900", label_color: "text-rose-600" },
+                  { label: "Contacts", value: contactsToCreate, color: "bg-indigo-50 border-indigo-200", text: "text-indigo-900", label_color: "text-indigo-600" },
+                  { label: "Companies", value: companiesToCreate, color: "bg-violet-50 border-violet-200", text: "text-violet-900", label_color: "text-violet-600" },
+                ].map(({ label, value, color, text, label_color }) => (
+                  <div key={label} className={`rounded-2xl border p-4 ${color}`}>
+                    <p className={`text-xs font-bold uppercase tracking-[0.15em] ${label_color}`}>{label}</p>
+                    <p className={`mt-2 text-3xl font-bold ${text}`}>{value}</p>
                   </div>
                 ))}
               </div>
+
+              {invalidRows > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  ⚠️ Fix {invalidRows} invalid row{invalidRows > 1 ? "s" : ""} above before importing.
+                </div>
+              )}
+
               <Button
                 type="button"
                 size="lg"
@@ -573,26 +657,36 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
                 disabled={!access.validated || invalidRows > 0 || !validRows || isSubmitting}
                 onClick={submitImport}
               >
-                {isSubmitting ? "Importing..." : "Import to HubSpot"}
+                {isSubmitting ? "Importing..." : "Import to HubSpot →"}
               </Button>
             </CardContent>
           </Card>
         ) : null}
 
+        {/* Import Result */}
         {step === "result" && result ? (
           <Card>
             <CardHeader>
-              <CardTitle>Import result</CardTitle>
+              <CardTitle>Import Result</CardTitle>
               <CardDescription>Processed rows and row-level failures.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">Total Processed: {result.totalProcessed}</div>
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">Success Count: {result.successCount}</div>
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900">Failure Count: {result.failureCount}</div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Processed</p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">{result.totalProcessed}</p>
+                </div>
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Success Count</p>
+                  <p className="mt-2 text-3xl font-bold text-emerald-900">{result.successCount}</p>
+                </div>
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-rose-600">Failure Count</p>
+                  <p className="mt-2 text-3xl font-bold text-rose-900">{result.failureCount}</p>
+                </div>
               </div>
               <Button type="button" variant="outline" disabled={!result.errorRows.length} onClick={downloadErrors}>
-                Download error report JSON
+                Download Error Report JSON
               </Button>
             </CardContent>
           </Card>
