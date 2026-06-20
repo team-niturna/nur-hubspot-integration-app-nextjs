@@ -38,12 +38,24 @@ function readStoredAccess(): HubspotAccessState {
 }
 
 export function HubspotAccessGate({ onAccessChange, compact }: HubspotAccessGateProps) {
-  const [access, setAccess] = useState<HubspotAccessState>(() => readStoredAccess());
-  const [draftToken, setDraftToken] = useState(access.accessToken);
+  const [access, setAccess] = useState<HubspotAccessState>({
+    accessToken: "",
+    validated: false,
+    scopes: [],
+    missingRecommendedScopes: [],
+  });
+  const [draftToken, setDraftToken] = useState("");
   const [isChecking, setIsChecking] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(
-    access.validated ? { type: "success", text: "HubSpot access is validated for this browser session." } : null,
-  );
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    const stored = readStoredAccess();
+    setAccess(stored);
+    setDraftToken(stored.accessToken);
+    if (stored.validated) {
+      setMessage({ type: "success", text: "HubSpot access is validated for this browser session." });
+    }
+  }, []);
 
   useEffect(() => {
     onAccessChange?.(access);

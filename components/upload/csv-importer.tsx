@@ -376,20 +376,20 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 sm:px-10 lg:px-16">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950/10 px-6 py-10 sm:px-10 lg:px-16">
       <div className="mx-auto w-full max-w-7xl space-y-8">
-        <section className="rounded-[2rem] border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-900/5 sm:p-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">CSV Import</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Map one CSV into HubSpot contacts or companies.</h1>
-          <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
+        <section className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-xl shadow-slate-900/5 sm:p-10">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">CSV Import</p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 dark:text-slate-100">Map one CSV into HubSpot contacts or companies.</h1>
+          <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-400">
             Validate access, choose object type, upload a CSV, map properties to CSV columns, correct rows in the browser, then import.
           </p>
         </section>
 
         <HubspotAccessGate compact onAccessChange={setAccess} />
 
-        <div className="rounded-[2rem] border border-slate-200/80 bg-white p-8 shadow-sm shadow-slate-900/5">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 mb-4">Object Type Selection</p>
+        <div className="rounded-[2rem] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-sm shadow-slate-900/5">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-4">Object Type Selection</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
               {
@@ -421,8 +421,8 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
                   }}
                   className={`group cursor-pointer rounded-2xl border p-5 transition duration-300 ${
                     selected
-                      ? "border-indigo-600 bg-indigo-500/5 dark:bg-indigo-500/10 shadow-md ring-2 ring-indigo-650 dark:ring-indigo-500 dark:border-indigo-500"
-                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
+                      ? "border-slate-900 dark:border-slate-100 bg-slate-950/5 dark:bg-white/5 shadow-md ring-2 ring-slate-900 dark:ring-slate-100"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
                   }`}
                 >
                   <div className="flex items-center gap-4">
