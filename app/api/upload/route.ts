@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { filterWritableProperties } from "@/lib/hubspotProperties.server";
 import { friendlyHubspotApiCall, upsertContact, upsertCompany, associateContactAndCompany } from "@/app/lib/hubspotClient";
+import { getValidAccessToken } from "@/lib/hubspotToken";
 
 interface BatchUploadPayload {
-  accessToken?: string;
   rows: Array<{
     contact?: Record<string, string | number | null>;
     company?: Record<string, string | number | null>;
@@ -13,26 +13,29 @@ interface BatchUploadPayload {
 export async function POST(req: NextRequest): Promise<Response> {
   try {
     const body: BatchUploadPayload = await req.json();
-    const accessToken = body.accessToken?.trim();
 
-    if (!accessToken && !process.env.HUBSPOT_ACCESS_TOKEN) {
+    // Fetch the access token server-side from MongoDB (auto-refreshes if expired).
+    let accessToken: string;
+    try {
+      accessToken = await getValidAccessToken();
+    } catch {
       return Response.json(
-        { success: false, message: "Enter and validate a HubSpot private app access token first." },
-        { status: 400 }
+        { success: false, message: "HubSpot is not connected. Please connect via OAuth first." },
+        { status: 401 },
       );
     }
 
     if (!body.rows || !Array.isArray(body.rows)) {
       return Response.json(
         { success: false, message: "Invalid payload: rows array is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (body.rows.length === 0) {
       return Response.json(
         { success: false, message: "No rows to process" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,8 +53,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         // Process contact if present
         if (row.contact && Object.keys(row.contact).length > 0) {
           const contactPayload = filterWritableProperties(row.contact, "contact");
-          
-          // Check if email is present
+
           if (!contactPayload.email) {
             throw new Error("Contact row requires email address");
           }
@@ -63,8 +65,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         // Process company if present
         if (row.company && Object.keys(row.company).length > 0) {
           const companyPayload = filterWritableProperties(row.company, "company");
-          
-          // Check if name or domain is present
+
           if (!companyPayload.name && !companyPayload.domain) {
             throw new Error("Company row requires name or domain");
           }
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         success: false,
         message: err.message || "Failed to process upload",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

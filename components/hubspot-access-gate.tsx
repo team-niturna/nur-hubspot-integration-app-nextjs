@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 export interface HubspotAccessState {
   accessToken: string;
@@ -17,149 +16,116 @@ interface HubspotAccessGateProps {
   compact?: boolean;
 }
 
-const STORAGE_KEY = "hubspot_private_app_access";
-
-function readStoredAccess(): HubspotAccessState {
-  if (typeof window === "undefined") {
-    return { accessToken: "", validated: false, scopes: [], missingRecommendedScopes: [] };
-  }
-
-  try {
-    const parsed = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) || "{}") as Partial<HubspotAccessState>;
-    return {
-      accessToken: parsed.accessToken || "",
-      validated: Boolean(parsed.validated && parsed.accessToken),
-      scopes: parsed.scopes || [],
-      missingRecommendedScopes: parsed.missingRecommendedScopes || [],
-    };
-  } catch {
-    return { accessToken: "", validated: false, scopes: [], missingRecommendedScopes: [] };
-  }
-}
+type ConnectionStatus = "loading" | "connected" | "disconnected" | "error";
 
 export function HubspotAccessGate({ onAccessChange, compact }: HubspotAccessGateProps) {
-  const [access, setAccess] = useState<HubspotAccessState>({
-    accessToken: "",
-    validated: false,
-    scopes: [],
-    missingRecommendedScopes: [],
+  const [status, setStatus] = useState<ConnectionStatus>("loading");
+  const [portalId, setPortalId] = useState<string | null>(null);
+
+  // Read the ?connected= param once on mount using a lazy initializer to avoid
+  // calling setState inside a useEffect (react-hooks/set-state-in-effect).
+  const [flashMessage] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    const val = params.get("connected");
+    if (val === "1") {
+      window.history.replaceState({}, "", window.location.pathname);
+      return "HubSpot connected successfully!";
+    }
+    if (val === "error") {
+      window.history.replaceState({}, "", window.location.pathname);
+      return "Connection failed. Please try again.";
+    }
+    return null;
   });
-  const [draftToken, setDraftToken] = useState("");
-  const [isChecking, setIsChecking] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    const stored = readStoredAccess();
-    setAccess(stored);
-    setDraftToken(stored.accessToken);
-    if (stored.validated) {
-      setMessage({ type: "success", text: "HubSpot access is validated for this browser session." });
+    async function checkStatus() {
+      try {
+        const res = await fetch("/api/hubspot/oauth/status");
+        const data = (await res.json()) as { connected: boolean; portalId?: string };
+        if (data.connected) {
+          setStatus("connected");
+          setPortalId(data.portalId ?? null);
+        } else {
+          setStatus("disconnected");
+        }
+      } catch {
+        setStatus("error");
+      }
     }
+
+    checkStatus();
   }, []);
 
+  // Keep parent pages that check access.validated working unchanged.
   useEffect(() => {
-    onAccessChange?.(access);
-  }, [access, onAccessChange]);
-
-  function saveAccess(next: HubspotAccessState) {
-    setAccess(next);
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    }
-  }
-
-  async function validateToken() {
-    const token = draftToken.trim();
-    if (!token) {
-      setMessage({ type: "error", text: "Enter your private app access token first." });
-      saveAccess({ accessToken: "", validated: false, scopes: [], missingRecommendedScopes: [] });
-      return;
-    }
-
-    setIsChecking(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch("/api/hubspot/validate-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken: token }),
-      });
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Unable to validate token.");
-      }
-
-      const next = {
-        accessToken: token,
-        validated: true,
-        scopes: result.scopes || [],
-        missingRecommendedScopes: result.missingRecommendedScopes || [],
-      };
-      saveAccess(next);
-      setMessage({ type: "success", text: result.message || "Token validated successfully." });
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      saveAccess({ accessToken: token, validated: false, scopes: [], missingRecommendedScopes: [] });
-      setMessage({ type: "error", text: err.message || "Unable to validate token." });
-    } finally {
-      setIsChecking(false);
-    }
-  }
-
-  function clearToken() {
-    setDraftToken("");
-    saveAccess({ accessToken: "", validated: false, scopes: [], missingRecommendedScopes: [] });
-    setMessage(null);
-    if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem(STORAGE_KEY);
-    }
-  }
+    const validated = status === "connected";
+    onAccessChange?.({
+      accessToken: "",   // Token is server-side only; never sent to the browser.
+      validated,
+      scopes: [],
+      missingRecommendedScopes: [],
+    });
+  }, [status, onAccessChange]);
 
   return (
     <Card className={compact ? "shadow-sm" : ""}>
       <CardHeader>
-        <CardTitle>Connect HubSpot private app</CardTitle>
+        <CardTitle>HubSpot Connection</CardTitle>
         <CardDescription>
-          Enter a private app access token with contacts and companies read/write scopes before manual entry or CSV import.
+          Connect your HubSpot account via OAuth to enable contact and company management.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
-          <Input
-            type="password"
-            value={draftToken}
-            onChange={(event) => {
-              setDraftToken(event.target.value);
-              if (access.validated) {
-                saveAccess({ accessToken: event.target.value, validated: false, scopes: [], missingRecommendedScopes: [] });
-              }
-            }}
-            placeholder="pat-na1-..."
-            autoComplete="off"
-          />
-          <Button type="button" isLoading={isChecking} onClick={validateToken}>
-            {isChecking ? "Checking..." : "Check key"}
-          </Button>
-          <Button type="button" variant="outline" onClick={clearToken}>
-            Clear
-          </Button>
-        </div>
+        {status === "loading" && (
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-slate-400" />
+            Checking connection…
+          </div>
+        )}
 
-        {message ? (
+        {status === "connected" && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs">✓</span>
+              Connected{portalId ? ` · Portal ${portalId}` : ""}
+            </div>
+            <a href="/api/hubspot/oauth/connect">
+              <Button type="button" variant="outline" size="sm">
+                Reconnect
+              </Button>
+            </a>
+          </div>
+        )}
+
+        {(status === "disconnected" || status === "error") && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-500">
+              {status === "error"
+                ? "Could not check connection status."
+                : "No HubSpot account connected yet."}
+            </p>
+            <a href="/api/hubspot/oauth/connect">
+              <Button type="button" variant="default">
+                Connect HubSpot
+              </Button>
+            </a>
+          </div>
+        )}
+
+        {flashMessage && (
           <div
             className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
-              message.type === "success"
+              flashMessage.includes("successfully")
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                 : "border-rose-200 bg-rose-50 text-rose-700"
             }`}
           >
-            {message.type === "success" ? "✓ " : "⚠️ "}{message.text}
+            {flashMessage.includes("successfully") ? "✓ " : "⚠️ "}
+            {flashMessage}
           </div>
-        ) : null}
-
-        {/* Access validation status is displayed via the message block above */}
+        )}
       </CardContent>
     </Card>
   );

@@ -7,9 +7,9 @@ import {
   HubSpotProperties,
 } from "@/app/lib/hubspotClient";
 import { filterWritableProperties } from "@/lib/hubspotProperties.server";
+import { getValidAccessToken } from "@/lib/hubspotToken";
 
 interface HubSpotPayload {
-  accessToken?: string;
   contact?: HubSpotProperties;
   company?: HubSpotProperties;
   associate?: boolean;
@@ -20,12 +20,15 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as HubSpotPayload;
     const saveMode = body.saveMode ?? "both";
-    const accessToken = body.accessToken?.trim();
 
-    if (!accessToken && !process.env.HUBSPOT_ACCESS_TOKEN) {
+    // Fetch the access token server-side from MongoDB (auto-refreshes if expired).
+    let accessToken: string;
+    try {
+      accessToken = await getValidAccessToken();
+    } catch {
       return NextResponse.json(
-        { success: false, message: "Enter and validate a HubSpot private app access token first." },
-        { status: 400 },
+        { success: false, message: "HubSpot is not connected. Please connect via OAuth first." },
+        { status: 401 },
       );
     }
 

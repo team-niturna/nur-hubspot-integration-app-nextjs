@@ -182,19 +182,18 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
   }, [toast]);
 
   useEffect(() => {
-    if (!access.validated || !importObjectType) {
-      setDynamicProperties([]);
-      return;
-    }
-
     async function fetchProperties() {
+      if (!access.validated || !importObjectType) {
+        setDynamicProperties([]);
+        return;
+      }
+
       setIsLoadingProperties(true);
       try {
         const response = await fetch("/api/hubspot/properties", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            accessToken: access.accessToken,
             objectType: importObjectType === "contact" ? "contacts" : "companies",
           }),
         });
@@ -223,7 +222,7 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
     }
 
     fetchProperties();
-  }, [access.validated, access.accessToken, importObjectType, contactProperties, companyProperties]);
+  }, [access.validated, importObjectType, contactProperties, companyProperties]);
 
   const activeProperties = useMemo(() => {
     if (!importObjectType) return [];
@@ -333,7 +332,7 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
 
   async function submitImport() {
     if (!access.validated) {
-      setToast({ type: "error", message: "Validate your HubSpot private app access token first." });
+      setToast({ type: "error", message: "Connect your HubSpot account via OAuth first." });
       return;
     }
 
@@ -355,7 +354,7 @@ export function CsvImporter({ contactProperties, companyProperties }: CsvImporte
       const response = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken: access.accessToken, rows: payloadRows }),
+        body: JSON.stringify({ rows: payloadRows }),
       });
       const data = await response.json();
 

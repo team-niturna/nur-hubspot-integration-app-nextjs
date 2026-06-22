@@ -220,7 +220,7 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
 
   const onSubmit = async (values: ManualEntryFormValues) => {
     if (!access.validated) {
-      setToast({ type: "error", message: "Validate your HubSpot private app access token first." });
+      setToast({ type: "error", message: "Connect your HubSpot account via OAuth first." });
       return;
     }
 
@@ -244,7 +244,6 @@ export function ManualEntryForm({ contactProperties, companyProperties }: Manual
 
     try {
       const payload = {
-        accessToken: access.accessToken,
         contact: saveMode === "contact" ? contactPayload : undefined,
         company: saveMode === "company" ? companyPayload : undefined,
         associate: false,
