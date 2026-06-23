@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { redirect } from "next/navigation";
 import axios from "axios";
 import { saveConnection } from "@/lib/hubspotToken";
+import { cookies } from "next/headers";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
@@ -39,8 +40,19 @@ export async function GET(req: NextRequest) {
 
     const portalId = String(tokenInfo.data.hub_id);
 
+    const cookieStore = await cookies();
+
+    const sessionId = req.nextUrl.searchParams.get("state");
+
+    const cookieSession = cookieStore.get("hubspot_session")?.value;
+
+    if (!sessionId || sessionId !== cookieSession) {
+      throw new Error("Invalid OAuth state");
+    }
+
     // 3. Persist connection to MongoDB.
     await saveConnection({
+      sessionId,
       portalId,
       accessToken: access_token,
       refreshToken: refresh_token,

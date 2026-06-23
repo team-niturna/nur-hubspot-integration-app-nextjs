@@ -5,11 +5,13 @@
 
 import axios from "axios";
 import clientPromise from "@/lib/mongodb";
+import { cookies } from "next/headers";
 
 const DB_NAME = "hubspot";
 const COLLECTION = "hubspot_connections";
 
 export interface HubspotConnection {
+  sessionId: string;
   portalId: string;
   accessToken: string;
   refreshToken: string;
@@ -32,10 +34,14 @@ async function getCollection() {
  */
 export async function getValidAccessToken(): Promise<string> {
   const col = await getCollection();
-  const conn = await col.findOne({});
+  const sessionId = (await cookies()).get("hubspot_session")?.value;
+
+  const conn = await col.findOne({ sessionId });
 
   if (!conn) {
-    throw new Error("HubSpot is not connected. Please connect via OAuth first.");
+    throw new Error(
+      "HubSpot is not connected. Please connect via OAuth first.",
+    );
   }
 
   const nowPlusSixty = new Date(Date.now() + 60 * 1000);
@@ -65,7 +71,7 @@ export async function getValidAccessToken(): Promise<string> {
   const now = new Date();
 
   await col.updateOne(
-    { portalId: conn.portalId },
+    { sessionId },
     {
       $set: {
         accessToken: access_token,
@@ -82,20 +88,26 @@ export async function getValidAccessToken(): Promise<string> {
 /**
  * Upserts the connection document. Called after a successful OAuth callback.
  */
-export async function saveConnection(data: Omit<HubspotConnection, "createdAt" | "updatedAt">) {
+export async function saveConnection(
+  data: Omit<HubspotConnection, "createdAt" | "updatedAt">,
+) {
   const col = await getCollection();
   const now = new Date();
 
   await col.updateOne(
-    { portalId: data.portalId },
+    { sessionId: data.sessionId },
     {
       $set: {
+        sessionId: data.sessionId,
+        portalId: data.portalId,
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
         expiresAt: data.expiresAt,
         updatedAt: now,
       },
-      $setOnInsert: { createdAt: now },
+      $setOnInsert: {
+        createdAt: now,
+      },
     },
     { upsert: true },
   );
@@ -111,9 +123,17 @@ export async function getConnectionStatus(): Promise<{
 }> {
   try {
     const col = await getCollection();
-    const conn = await col.findOne({}, { projection: { portalId: 1, expiresAt: 1 } });
+    const sessionId = (await cookies()).get("hubspot_session")?.value;
+
+    const conn = await col.findOne({
+      sessionId,
+    });
     if (!conn) return { connected: false };
-    return { connected: true, portalId: conn.portalId, expiresAt: conn.expiresAt };
+    return {
+      connected: true,
+      portalId: conn.portalId,
+      expiresAt: conn.expiresAt,
+    };
   } catch {
     return { connected: false };
   }
